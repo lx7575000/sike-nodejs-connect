@@ -1,66 +1,56 @@
-var expect = require('chai').expect;
-var assert = require('chai').assert
-var request = require("supertest");
-var connect = require("../index.js");
+var should = require('chai').should();
+var request = require('supertest');
 var http = require('http');
-
-var next = connect().next;
-
-var m1 = function(next) {
-	console.log('fun1....');
-	next();
-}
-
-var m2 = function(next) {
-	console.log('fun2....');
-	next();
-}
-
-var m3 = function(next){
-	return 3;
-}
+var express = require('../index.js');
 
 
-describe('Implement app.use', function(){
-
-		var app = connect();
-		it('should be able to add middlewares to stack', function(done){
-			app.use(m1);
-			assert.equal(app.handlerLength(), 1);
-			app.use(m2);
-			assert.equal(app.handlerLength(), 2);
-			done();
-		});
-})
-
-
-describe('calling middleware stack', function(){
-	var app;
-	beforeEach(function(){
-		app = connect();
+describe('.use()', function(){
+	var app ;
+	beforeEach(function(done){
+		app = express();
+		done();
 	});
-	it('Should be able to call a single middleware:', function(done){
-		app.use(m3);
-		assert.equal(app.handlerLength(), 1);
-		assert.equal(app.handle(), 404);
-		done();
-	})
 
-	it('Should be able to call next to go to the next middleware', function(done){
+	it('should add one middleware into the app.stack', function(done){
+		var m1 = function(){};
 		app.use(m1);
-		app.use(m2);
-		app.use(m3);
-		assert.equal(app.handle(), 404);
+		app.stack.length.should.equal(1);
 		done();
-	})
+	});
+	it ("should be able to call a single middleware", function (done) {
+      app.use(function (req, res, next) {
+      	console.log('gagagag');
+        res.end("hello from m1");
+        next()
+      });
+      request(app).get("/").expect("hello from m1").end(done);
+    });
 
-	it('Should 404 at the end of middleware chain', function(done){
-		done();
-	})
+        it ("should be able to call 2 middlewares", function (done) {
+      var result = [];
+      var m1 = function (req, res, next) { result.push("m1"); next(); };
+      var m2 = function (req, res, next) { 
+        result.push("m2"); 
+        res.end("hello from m2"); 
+      };
 
-	it('Should 404 if no middleware is added', function(done){
-		
-		assert.equal(app.handle(), 404);
-		done();
-	})
-})
+      app.use(m1);
+      app.use(m2);
+
+      request(app).get("/").expect("hello from m2").end(function (err) {
+        result.should.deep.equal(['m1', 'm2']);
+        done(err);
+      });
+    });
+
+     it ("should respond to 404 when all middlewares in stack has been called ", function (done) {
+      var m1 = function (req, res, next) { next(); };
+      var m2 = function (req, res, next) { next(); };
+      app.use(m1).use(m2);
+      request(app).get("/").expect(404, done);
+    });
+
+      it ("should respond to 404 when middlewares's stack is empty", function (done) {
+      request(app).get("/").expect(404, done);
+    });
+});
