@@ -18,17 +18,9 @@
 
 // app.listen(4000);
 
-var myexpress = require('./index.js');
+var Layer = require('./lib/layer.js');
 
-var app = myexpress();
+var layer = new Layer('/foo', function(){});
 
-var m1 = function(a, b ,c){
-	console.log('Hello');
-	res.end('hhhhhhhh');
-}
-
-console.log('length ' + m1.length);
-app.use(m1);
-app.listen(4000);
-
-console.log('length of stack is ' + app.stack.length);
+var c = layer.match('/');
+console.log(c);

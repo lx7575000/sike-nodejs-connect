@@ -1,5 +1,6 @@
 module.exports = myexpress;
 var http = require('http');
+var layer = require('./lib/layer.js');
 
 function myexpress(){
 
@@ -29,10 +30,6 @@ function myexpress(){
 				}
 			}
 
-		// for(var i = 0; i < app.stack.length; i++){
-		// 	var fn = app.stack[i];
-		// 	fn(req, res, next);
-		// }
 
 			//通过middleware_index来判断是否已经执行到最后的位置
 			function hasAnyMiddlewareToExcute () {
@@ -52,12 +49,12 @@ function myexpress(){
 				// console.log('callMiddleWare');
 				var arity = current_layer.handle.length;// 错误！！！
 
-				if(err && arity === 4){
+				if(current_layer.match(req.url)&& err && arity === 4){
 					// console.log('4 parameter');
 					//判断当前的函数是否传入四个参数，产生错误，且是否与路径匹配。符合参数四个的要求。
 					middleware_index ++;
 					current_layer.handle.call(this, err, req, res, next);
-				}else if(!err && arity < 4){
+				}else if(current_layer.match(req.url) && !err && arity < 4){
 					//没出错，且传入的是三个参数。刚好符合传入三个参数的要求。
 					// console.log('3 parameters');
 					middleware_index ++;
@@ -89,7 +86,10 @@ function myexpress(){
 			middleware = fn;
 		}
 		// app.stack.push({'route' : path, 'middleware' : middleware});
-		app.stack.push({route : path, handle : middleware});
+		// app.stack.push({route : path, handle : middleware});
+		//上方是旧版本的，新版本将内容封装成为了layer
+		app.stack.push(new layer(path, middleware));
+
 		if(middleware.isMiddleWare  != undefined){
 			middleware.isMiddleWare = true;
 		}
